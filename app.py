@@ -2,9 +2,9 @@ import streamlit as st
 import pandas as pd
 import plotly.express as px
 
-st.set_page_config(page_title="Team Dismissal Sensitivity", layout="wide")
-st.title("🧨 Team Sensitivity to Dismissal Types")
-st.markdown("See which teams are more prone to specific types of dismissals.")
+st.set_page_config(page_title="Team Dismissal Analysis", layout="wide")
+st.title("🎯 Team Dismissal Breakdown")
+st.markdown("Select a team and season to view dismissal type distribution.")
 
 # Load Data
 @st.cache_data
@@ -13,46 +13,44 @@ def load_data():
 
 df = load_data()
 
-# Common dismissal types to analyze
+# Ensure expected columns are present
 dismissal_cols = ["bowled", "caught", "caught and bowled", "lbw", "run out"]
+required_cols = dismissal_cols + ["batting_team", "season"]
+missing_cols = [col for col in required_cols if col not in df.columns]
 
-# Group by batting team and sum dismissals
-dismissal_summary = df.groupby("batting_team")[dismissal_cols].sum()
+if missing_cols:
+    st.error(f"The following required columns are missing from the dataset: {missing_cols}")
+else:
+    # Choose season
+    available_seasons = sorted(df["season"].dropna().unique())
+    selected_season = st.radio("📅 Select Season", available_seasons, horizontal=True)
 
-# Option to normalize values
-normalize = st.checkbox("Normalize (Show % of each dismissal type)", value=True)
+    # Filter data by selected season
+    season_df = df[df["season"] == selected_season]
 
-if normalize:
-    dismissal_summary = dismissal_summary.div(dismissal_summary.sum(axis=1), axis=0) * 100
+    # Choose team
+    teams = sorted(season_df["batting_team"].dropna().unique())
+    selected_team = st.selectbox("🏏 Select Team", teams)
 
-# Melt data for long-form format required by density_heatmap
-dismissal_long = dismissal_summary.reset_index().melt(
-    id_vars="batting_team",
-    var_name="Dismissal Type",
-    value_name="Value"
-)
+    # Aggregate dismissal counts for selected team
+    team_dismissals = (
+        season_df[season_df["batting_team"] == selected_team][dismissal_cols]
+        .sum()
+        .sort_values(ascending=False)
+        .reset_index()
+    )
+    team_dismissals.columns = ["Dismissal Type", "Count"]
 
-# Sort to prioritize higher values in visualization
-dismissal_long = dismissal_long.sort_values(by="Value", ascending=False)
+    # Remove dismissal types with zero counts (optional)
+    team_dismissals = team_dismissals[team_dismissals["Count"] > 0]
 
-# Plot heatmap
-fig = px.density_heatmap(
-    dismissal_long,
-    x="Dismissal Type",
-    y="batting_team",
-    z="Value",
-    color_continuous_scale="Reds",
-    labels={
-        "batting_team": "Team",
-        "Value": "Dismissal Count" if not normalize else "Percentage"
-    },
-    height=800
-)
+    # Plot Pie Chart
+    fig = px.pie(
+        team_dismissals,
+        names="Dismissal Type",
+        values="Count",
+        title=f"{selected_team} Dismissal Breakdown - {selected_season}",
+        color_discrete_sequence=px.colors.sequential.Reds
+    )
 
-fig.update_layout(
-    xaxis=dict(tickangle=45),
-    yaxis=dict(autorange="reversed"),
-    margin=dict(l=100, r=20, t=40, b=40)
-)
-
-st.plotly_chart(fig, use_container_width=True)
+    st.plotly_chart(fig, use_container_width=True)
