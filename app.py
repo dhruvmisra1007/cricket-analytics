@@ -65,22 +65,7 @@ else:
     team_dismissals.columns = ["Dismissal Type", "Count"]
     team_dismissals = team_dismissals[team_dismissals["Count"] > 0]
 
-    # # STEP 5: Plot pie chart with enhanced styling
-    # fig = px.pie(
-    #     team_dismissals,
-    #     names="Dismissal Type",
-    #     values="Count",
-    #     title=f"{selected_team} Dismissal Breakdown - {selected_season}",
-    #     color_discrete_sequence=px.colors.qualitative.Set3,
-    #     hole=0.4
-    # )
-
-    # fig.update_traces(
-    #     textinfo='label+percent',
-    #     pull=[0.03] * len(team_dismissals),
-    #     marker=dict(line=dict(color='black', width=1)),
-    #     hovertemplate="%{label}: %{value} dismissals (%{percent})<extra></extra>"
-    # )
+    # STEP 5: Plot pie chart with enhanced styling
     fig = px.pie(
         team_dismissals,
         names="Dismissal Type",
@@ -90,26 +75,11 @@ else:
         hole=0.4
     )
 
-    fig.update_layout(
-        font=dict(
-            family="Segoe UI, Helvetica, Arial",
-            size=14,
-            color="white"  # adjust to dark or light mode
-        ),
-        title_font=dict(size=22, family="Segoe UI", color="white"),
-        legend_font=dict(size=13),
-        paper_bgcolor='rgba(0,0,0,0)',  # transparent background
-        plot_bgcolor='rgba(0,0,0,0)'
-    )
-
     fig.update_traces(
-        textposition='inside',
-        textinfo='percent+label',
-        marker=dict(line=dict(color='black', width=1)),
+        textinfo='label+percent',
         pull=[0.03] * len(team_dismissals),
-        hovertemplate="%{label}: %{value} dismissals (%{percent})<extra></extra>",
-        insidetextorientation='auto'
+        marker=dict(line=dict(color='black', width=1)),
+        hovertemplate="%{label}: %{value} dismissals (%{percent})<extra></extra>"
     )
-
 
     st.plotly_chart(fig, use_container_width=True)
